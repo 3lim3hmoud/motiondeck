@@ -68,7 +68,8 @@ export default function OnboardingQuizPage() {
         setStep((s) => s + 1);
         setJustSelected(null);
       } else {
-        // TODO(Phase — onboarding backend): persist answers to Workspace/User prefs.
+        // TODO(Phase — onboarding backend): persist `answers` to Workspace/User prefs.
+        void answers;
         router.push(ROUTES.dashboard);
       }
     }, 400);

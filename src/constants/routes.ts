@@ -8,10 +8,10 @@ export const ROUTES = {
   pricing: "/pricing",
   help: "/help",
 
-  login: "/auth/login",
-  signup: "/auth/signup",
-  resetPassword: "/auth/reset-password",
-  onboarding: "/auth/onboarding",
+  login: "/login",
+  signup: "/signup",
+  resetPassword: "/reset-password",
+  onboarding: "/onboarding",
 
   dashboard: "/dashboard",
   workspace: (workspaceId: string) => `/workspace/${workspaceId}`,

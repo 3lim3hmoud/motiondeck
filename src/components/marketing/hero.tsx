@@ -1,13 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { motion, useInView } from "framer-motion";
+import { motion, useInView, useReducedMotion } from "framer-motion";
 import { useRef } from "react";
 import { PlayCircle, Sparkles } from "lucide-react";
 import { ROUTES } from "@/constants/routes";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { useReducedMotionSafe } from "@/hooks/use-reduced-motion-safe";
 
 /**
  * The hero's before/after morph is the actual pitch (per UX spec §Landing
@@ -20,11 +19,9 @@ import { useReducedMotionSafe } from "@/hooks/use-reduced-motion-safe";
 function HeroMorph() {
   const ref = useRef<HTMLDivElement>(null);
   const inView = useInView(ref, { once: true, margin: "-100px" });
-  const reduceMotion = useReducedMotionSafe({
-    hidden: {},
-    visible: { transition: { staggerChildren: 0 } },
-  });
+  const prefersReducedMotion = useReducedMotion();
   const shouldAnimate = inView;
+  const t = (seconds: number) => (prefersReducedMotion ? 0 : seconds);
 
   const lines = [72, 94, 58, 88, 40];
 
@@ -34,7 +31,7 @@ function HeroMorph() {
       <motion.div
         className="absolute inset-0 rounded-xl border border-subtle bg-surface p-8 shadow-lg"
         animate={shouldAnimate ? { opacity: 0, scale: 0.94 } : { opacity: 1, scale: 1 }}
-        transition={{ duration: 0.6, delay: 0.4, ease: [0.4, 0, 1, 1] }}
+        transition={{ duration: t(0.6), delay: t(0.4), ease: [0.4, 0, 1, 1] }}
       >
         <div className="mb-6 h-3 w-24 rounded-full bg-neutral-300" />
         <div className="space-y-3">
@@ -61,7 +58,7 @@ function HeroMorph() {
                 ? { opacity: 1, y: 0, scale: 1 }
                 : { opacity: 0, y: 24, scale: 0.9 }
             }
-            transition={{ duration: 0.52, delay: 0.7 + block.delay, ease: [0, 0, 0.2, 1] }}
+            transition={{ duration: t(0.52), delay: t(0.7 + block.delay), ease: [0, 0, 0.2, 1] }}
           >
             <div className="flex size-full flex-col justify-end p-4">
               <div className="h-2 w-2/3 rounded-full bg-white/70" />
@@ -74,7 +71,7 @@ function HeroMorph() {
         className="absolute -right-4 -top-4 flex items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 shadow-md border border-subtle"
         initial={{ opacity: 0, scale: 0.8 }}
         animate={shouldAnimate ? { opacity: 1, scale: 1 } : { opacity: 0, scale: 0.8 }}
-        transition={{ duration: 0.3, delay: 1.3 }}
+        transition={{ duration: t(0.3), delay: t(1.3) }}
       >
         <Sparkles className="size-3.5 text-accent" />
         <span className="text-xs font-medium text-primary">AI structured in 4s</span>

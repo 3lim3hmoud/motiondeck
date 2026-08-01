@@ -25,12 +25,12 @@ const serverSchema = z.object({
   AUTH_GITHUB_SECRET: z.string().optional(),
 
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
-  UPLOADTHING_TOKEN: z.string(),
+  UPLOADTHING_TOKEN: z.string().optional(),
 
   GEMINI_API_KEY: z.string(),
 
-  STRIPE_SECRET_KEY: z.string(),
-  STRIPE_WEBHOOK_SECRET: z.string(),
+  STRIPE_SECRET_KEY: z.string().optional(),
+  STRIPE_WEBHOOK_SECRET: z.string().optional(),
 
   RESEND_API_KEY: z.string().optional(),
   EMAIL_FROM: z.string().optional(),

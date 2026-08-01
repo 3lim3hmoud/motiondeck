@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft } from "lucide-react";
+import { signIn } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { ROUTES } from "@/constants/routes";
@@ -22,6 +24,7 @@ import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { SsoButtons } from "@/features/auth/components/sso-buttons";
 import { PasswordStrengthMeter } from "@/features/auth/components/password-strength-meter";
+import { registerUser } from "@/server/auth/actions";
 
 const emailSchema = z.object({
   email: z.string().email("Enter a valid email address"),
@@ -32,8 +35,11 @@ const passwordSchema = z.object({
 });
 
 export default function SignupPage() {
+  const router = useRouter();
   const [step, setStep] = useState<"email" | "password">("email");
   const [email, setEmail] = useState("");
+  const [formError, setFormError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const emailForm = useForm<z.infer<typeof emailSchema>>({
     resolver: zodResolver(emailSchema),
@@ -50,9 +56,31 @@ export default function SignupPage() {
     setStep("password");
   }
 
-  function onPasswordSubmit(values: z.infer<typeof passwordSchema>) {
-    // TODO(Phase — Auth backend): wire to NextAuth credentials sign-up route.
-    console.log("sign up", { email, password: values.password });
+  async function onPasswordSubmit(values: z.infer<typeof passwordSchema>) {
+    setFormError(null);
+    setIsSubmitting(true);
+
+    const result = await registerUser({ email, password: values.password });
+    if (!result.ok) {
+      setIsSubmitting(false);
+      setFormError(result.error);
+      return;
+    }
+
+    const signInResult = await signIn("credentials", {
+      email,
+      password: values.password,
+      redirect: false,
+    });
+    setIsSubmitting(false);
+
+    if (signInResult?.error) {
+      setFormError("Account created — please log in.");
+      router.push(ROUTES.login);
+      return;
+    }
+    router.push(ROUTES.onboarding);
+    router.refresh();
   }
 
   return (
@@ -71,7 +99,15 @@ export default function SignupPage() {
               exit={{ opacity: 0, x: -12 }}
               transition={{ duration: 0.18 }}
             >
-              <SsoButtons />
+              <SsoButtons
+                onSelect={(provider) => {
+                  if (provider === "google") {
+                    void signIn("google", { callbackUrl: ROUTES.onboarding });
+                  } else {
+                    setFormError("Microsoft sign-in isn't set up yet — use email or Google.");
+                  }
+                }}
+              />
               <div className="my-5 flex items-center gap-3">
                 <Separator className="flex-1" />
                 <span className="text-xs text-tertiary">OR</span>
@@ -129,8 +165,13 @@ export default function SignupPage() {
                       </FormItem>
                     )}
                   />
-                  <Button type="submit" className="mt-4 w-full" size="lg">
-                    Create account
+                  {formError ? (
+                    <p className="text-sm text-danger" role="alert">
+                      {formError}
+                    </p>
+                  ) : null}
+                  <Button type="submit" className="mt-4 w-full" size="lg" disabled={isSubmitting}>
+                    {isSubmitting ? "Creating account…" : "Create account"}
                   </Button>
                 </form>
               </Form>
@@ -139,7 +180,7 @@ export default function SignupPage() {
         </AnimatePresence>
 
         <p className="mt-6 text-center text-xs text-tertiary">
-          By continuing you agree to MotionDeck's{" "}
+          By continuing you agree to MotionDeck’s{" "}
           <Link href="#" className="underline hover:text-secondary">Terms</Link> and{" "}
           <Link href="#" className="underline hover:text-secondary">Privacy Policy</Link>.
         </p>

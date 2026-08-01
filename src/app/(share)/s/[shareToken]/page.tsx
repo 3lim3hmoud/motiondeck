@@ -10,6 +10,8 @@ const scenes = ["Title", "The Problem", "Our Approach", "Results", "Next Steps"]
 
 export default function ShareViewerPage({ params }: { params: Promise<{ shareToken: string }> }) {
   const { shareToken } = use(params);
+  // TODO(sharing backend): fetch the deck for this shareToken once /api/share is wired.
+  void shareToken;
   const router = useRouter();
   const [index, setIndex] = useState(0);
   const [chromeVisible, setChromeVisible] = useState(true);
@@ -27,7 +29,7 @@ export default function ShareViewerPage({ params }: { params: Promise<{ shareTok
     return () => {
       if (hideTimeout.current) clearTimeout(hideTimeout.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, []);
 
   function goNext() {
@@ -156,7 +158,7 @@ export default function ShareViewerPage({ params }: { params: Promise<{ shareTok
             exit={{ opacity: 0 }}
             className="absolute inset-x-4 bottom-20 rounded-lg bg-black/80 p-4 text-sm text-white backdrop-blur-sm"
           >
-            Lead with the three-phase rollout timeline — pause after "40% reduction."
+            Lead with the three-phase rollout timeline — pause after “40% reduction.”
           </motion.div>
         )}
       </AnimatePresence>

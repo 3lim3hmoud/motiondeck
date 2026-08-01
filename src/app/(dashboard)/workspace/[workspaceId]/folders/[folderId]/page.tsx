@@ -1,100 +1,34 @@
-"use client";
+import { notFound } from "next/navigation";
+import { requireWorkspaceContext } from "@/server/workspace/context";
+import { getFolder } from "@/features/workspace/services/queries";
+import { listDecks } from "@/features/decks/services/queries";
+import { FolderView } from "@/features/workspace/components/folder-view";
 
-import { use, useState } from "react";
-import { MoreHorizontal, Plus } from "lucide-react";
-import {
-  Breadcrumb,
-  BreadcrumbItem,
-  BreadcrumbLink,
-  BreadcrumbList,
-  BreadcrumbPage,
-  BreadcrumbSeparator,
-} from "@/components/ui/breadcrumb";
-import { Button } from "@/components/ui/button";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
-import { EmptyState } from "@/components/shared/empty-state";
-import { Grid } from "@/components/ui/layout";
-import { StaggerItem, StaggerList } from "@/components/motion/motion-primitives";
-import { DeckCard } from "@/features/decks/components/deck-card";
-import { FolderDialog } from "@/features/workspace/components/folder-dialog";
-import { ROUTES } from "@/constants/routes";
-
-const folderDecks = [
-  { id: "30", title: "Sprint 14 Review", status: "ready" as const, updatedAt: "1d ago" },
-  { id: "31", title: "Onboarding Checklist", status: "ready" as const, updatedAt: "4d ago" },
-];
-
-export default function FolderPage({
+export default async function FolderPage({
   params,
+  searchParams,
 }: {
   params: Promise<{ workspaceId: string; folderId: string }>;
+  searchParams: Promise<{ page?: string }>;
 }) {
-  const { folderId } = use(params);
-  void folderId; // reserved for the data-fetching phase
-  const [name, setName] = useState("Onboarding");
-  const [renameOpen, setRenameOpen] = useState(false);
+  const ctx = await requireWorkspaceContext();
+  const { folderId } = await params;
+  const sp = await searchParams;
+  const page = Math.max(1, Number(sp.page) || 1);
+
+  const folder = await getFolder(ctx.workspaceId, folderId);
+  if (!folder) notFound();
+
+  const { decks, totalPages } = await listDecks({ workspaceId: ctx.workspaceId, folderId, page });
 
   return (
-    <div className="mx-auto max-w-7xl">
-      <Breadcrumb className="mb-3">
-        <BreadcrumbList>
-          <BreadcrumbItem>
-            <BreadcrumbLink href={ROUTES.dashboard}>Home</BreadcrumbLink>
-          </BreadcrumbItem>
-          <BreadcrumbSeparator />
-          <BreadcrumbItem>
-            <BreadcrumbPage>{name}</BreadcrumbPage>
-          </BreadcrumbItem>
-        </BreadcrumbList>
-      </Breadcrumb>
-
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-semibold text-primary">{name}</h1>
-        <div className="flex items-center gap-2">
-          <Button size="sm" className="gap-1.5">
-            <Plus className="size-3.5" />
-            New Deck
-          </Button>
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="sm"><MoreHorizontal className="size-4" /></Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={() => setRenameOpen(true)}>Rename folder</DropdownMenuItem>
-              <DropdownMenuItem>Move folder</DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem variant="destructive">Delete folder</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
-
-      {folderDecks.length === 0 ? (
-        <EmptyState title="This folder is empty" description="Move decks in, or create a new one here." />
-      ) : (
-        <StaggerList>
-          <Grid cols={4} gap={5}>
-            {folderDecks.map((deck, i) => (
-              <StaggerItem key={deck.id}>
-                <DeckCard deck={deck} index={i} />
-              </StaggerItem>
-            ))}
-          </Grid>
-        </StaggerList>
-      )}
-
-      <FolderDialog
-        open={renameOpen}
-        onOpenChange={setRenameOpen}
-        initialName={name}
-        onSubmit={setName}
-      />
-    </div>
+    <FolderView
+      workspaceId={ctx.workspaceId}
+      folderId={folder.id}
+      folderName={folder.name}
+      decks={decks}
+      page={page}
+      totalPages={totalPages}
+    />
   );
 }

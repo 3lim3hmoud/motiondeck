@@ -36,7 +36,7 @@ export default function ResetPasswordPage() {
           </div>
           <CardTitle>Check your email</CardTitle>
           <CardDescription>
-            If an account exists for {form.getValues("email")}, we've sent a reset link.
+            If an account exists for {form.getValues("email")}, we’ve sent a reset link.
           </CardDescription>
           <Button variant="secondary" className="mt-2 w-full" asChild>
             <Link href={ROUTES.login}>Back to login</Link>
@@ -46,7 +46,7 @@ export default function ResetPasswordPage() {
         <>
           <CardHeader>
             <CardTitle>Reset your password</CardTitle>
-            <CardDescription>We'll email you a link to get back in.</CardDescription>
+            <CardDescription>We’ll email you a link to get back in.</CardDescription>
           </CardHeader>
           <CardContent>
             <Form {...form}>
