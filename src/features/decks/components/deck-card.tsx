@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { MoreHorizontal } from "lucide-react";
 import { ROUTES } from "@/constants/routes";
 import { cn } from "@/lib/utils";
+import { relativeTime } from "@/lib/format";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,7 +17,16 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { IconButton } from "@/components/ui/icon-button";
 import { Badge } from "@/components/ui/badge";
-import type { Deck } from "@/types/domain";
+import { TextPromptDialog } from "@/components/shared/text-prompt-dialog";
+import { renameDeck, duplicateDeck, trashDeck } from "@/features/decks/services/actions";
+import type { DeckStatus } from "@/types/domain";
+
+export interface DeckCardData {
+  id: string;
+  title: string;
+  status: DeckStatus;
+  updatedAt: Date | string;
+}
 
 const tints = ["bg-brand-100", "bg-success/15", "bg-info/15", "bg-warning/15", "bg-danger/10"];
 
@@ -26,13 +37,37 @@ const tints = ["bg-brand-100", "bg-success/15", "bg-info/15", "bg-warning/15", "
  * block reveals; a real implementation would scrub the deck's actual first
  * scene animation.
  */
-function DeckCard({ deck, index = 0 }: { deck: Pick<Deck, "id" | "title" | "status" | "updatedAt">; index?: number }) {
+function DeckCard({ deck, index = 0 }: { deck: DeckCardData; index?: number }) {
+  const router = useRouter();
   const [hovered, setHovered] = useState(false);
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [isPending, startTransition] = useTransition();
   const tint = tints[index % tints.length];
+
+  function handleRename(title: string) {
+    startTransition(async () => {
+      await renameDeck(deck.id, title);
+      router.refresh();
+    });
+  }
+
+  function handleDuplicate() {
+    startTransition(async () => {
+      await duplicateDeck(deck.id);
+      router.refresh();
+    });
+  }
+
+  function handleTrash() {
+    startTransition(async () => {
+      await trashDeck(deck.id);
+      router.refresh();
+    });
+  }
 
   return (
     <div
-      className="group relative"
+      className={cn("group relative", isPending && "pointer-events-none opacity-60")}
       onMouseEnter={() => setHovered(true)}
       onMouseLeave={() => setHovered(false)}
     >
@@ -62,7 +97,7 @@ function DeckCard({ deck, index = 0 }: { deck: Pick<Deck, "id" | "title" | "stat
           <Link href={ROUTES.editor(deck.id)}>
             <p className="truncate text-md font-medium text-primary hover:text-accent">{deck.title}</p>
           </Link>
-          <p className="text-sm text-tertiary">Edited {deck.updatedAt}</p>
+          <p className="text-sm text-tertiary">Edited {relativeTime(deck.updatedAt)}</p>
         </div>
 
         <DropdownMenu>
@@ -77,15 +112,23 @@ function DeckCard({ deck, index = 0 }: { deck: Pick<Deck, "id" | "title" | "stat
             </IconButton>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuItem>Rename</DropdownMenuItem>
-            <DropdownMenuItem>Duplicate</DropdownMenuItem>
-            <DropdownMenuItem>Move to folder</DropdownMenuItem>
-            <DropdownMenuItem>Share</DropdownMenuItem>
+            <DropdownMenuItem onClick={() => setRenameOpen(true)}>Rename</DropdownMenuItem>
+            <DropdownMenuItem onClick={handleDuplicate}>Duplicate</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive">Move to trash</DropdownMenuItem>
+            <DropdownMenuItem variant="destructive" onClick={handleTrash}>Move to trash</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>
+
+      <TextPromptDialog
+        open={renameOpen}
+        onOpenChange={setRenameOpen}
+        title="Rename deck"
+        label="Deck title"
+        initialValue={deck.title}
+        submitLabel="Save"
+        onSubmit={handleRename}
+      />
     </div>
   );
 }

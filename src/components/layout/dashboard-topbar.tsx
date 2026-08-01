@@ -1,9 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import { ChevronDown, Plus, Search } from "lucide-react";
+import { ChevronDown, Search } from "lucide-react";
+import { signOut } from "next-auth/react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -15,15 +15,34 @@ import {
 import { ThemeToggle } from "@/components/layout/theme-toggle";
 import { NotificationsMenu } from "@/features/notifications/components/notifications-menu";
 import { CommandPalette } from "@/components/layout/command-palette";
+import { NewDeckButton } from "@/features/decks/components/new-deck-button";
 import { modKeyLabel } from "@/constants/shortcuts";
+import { ROUTES } from "@/constants/routes";
 
-function DashboardTopbar() {
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return "?";
+  if (parts.length === 1) return (parts[0] ?? "").slice(0, 2).toUpperCase();
+  const first = parts[0]?.[0] ?? "";
+  const last = parts[parts.length - 1]?.[0] ?? "";
+  return (first + last).toUpperCase();
+}
+
+function DashboardTopbar({
+  workspaceName,
+  userName,
+  userEmail,
+}: {
+  workspaceName: string;
+  userName: string;
+  userEmail: string;
+}) {
   const [paletteOpen, setPaletteOpen] = useState(false);
 
   return (
     <header className="flex h-16 shrink-0 items-center gap-4 border-b border-subtle bg-canvas px-4 sm:px-6">
       <button className="hidden items-center gap-1.5 rounded-md px-2 py-1.5 text-md font-medium text-primary hover:bg-surface-raised md:flex">
-        Acme Inc
+        <span className="max-w-40 truncate">{workspaceName}</span>
         <ChevronDown className="size-3.5 text-tertiary" />
       </button>
 
@@ -40,10 +59,9 @@ function DashboardTopbar() {
       <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
 
       <div className="ml-auto flex items-center gap-2">
-        <Button size="sm" className="hidden gap-1.5 sm:flex">
-          <Plus className="size-3.5" />
-          New Deck
-        </Button>
+        <div className="hidden sm:flex">
+          <NewDeckButton size="sm" />
+        </div>
         <ThemeToggle />
         <NotificationsMenu />
 
@@ -51,18 +69,26 @@ function DashboardTopbar() {
           <DropdownMenuTrigger asChild>
             <button className="rounded-full focus-visible:outline-none focus-visible:shadow-focus">
               <Avatar size="sm">
-                <AvatarFallback>JD</AvatarFallback>
+                <AvatarFallback>{initials(userName)}</AvatarFallback>
               </Avatar>
             </button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <DropdownMenuLabel>Jamie Doe</DropdownMenuLabel>
+            <DropdownMenuLabel className="truncate">{userName || userEmail}</DropdownMenuLabel>
             <DropdownMenuSeparator />
-            <DropdownMenuItem>Profile</DropdownMenuItem>
-            <DropdownMenuItem>Billing</DropdownMenuItem>
-            <DropdownMenuItem>Settings</DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <a href={ROUTES.profile}>Profile</a>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <a href={ROUTES.billing}>Billing</a>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <a href={ROUTES.settings}>Settings</a>
+            </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem variant="destructive">Log out</DropdownMenuItem>
+            <DropdownMenuItem variant="destructive" onClick={() => signOut({ callbackUrl: ROUTES.login })}>
+              Log out
+            </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

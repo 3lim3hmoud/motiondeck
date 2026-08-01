@@ -1,14 +1,13 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { usePathname } from "next/navigation";
+import { useState, useTransition } from "react";
+import { useRouter, usePathname } from "next/navigation";
 import {
   Activity,
   BarChart3,
   FolderPlus,
   Home,
-  Plus,
   Settings,
   Share2,
   Sparkles,
@@ -17,8 +16,9 @@ import {
 } from "lucide-react";
 import { ROUTES } from "@/constants/routes";
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
 import { FolderDialog } from "@/features/workspace/components/folder-dialog";
+import { NewDeckButton } from "@/features/decks/components/new-deck-button";
+import { createFolder } from "@/features/workspace/services/actions";
 
 const primaryNav = [
   { label: "Home", href: ROUTES.dashboard, icon: Home },
@@ -27,16 +27,31 @@ const primaryNav = [
   { label: "Analytics", href: ROUTES.analytics(), icon: BarChart3 },
 ];
 
-const initialFolders = [
-  { id: "f1", name: "Q3 Sales" },
-  { id: "f2", name: "Onboarding" },
-  { id: "f3", name: "Client Work" },
-];
+interface SidebarFolder {
+  id: string;
+  name: string;
+}
 
-function Sidebar() {
+function Sidebar({
+  workspaceId,
+  workspaceName,
+  folders,
+}: {
+  workspaceId: string;
+  workspaceName: string;
+  folders: SidebarFolder[];
+}) {
   const pathname = usePathname();
-  const [folders, setFolders] = useState(initialFolders);
+  const router = useRouter();
   const [createOpen, setCreateOpen] = useState(false);
+  const [, startTransition] = useTransition();
+
+  function handleCreateFolder(name: string) {
+    startTransition(async () => {
+      await createFolder({ name });
+      router.refresh();
+    });
+  }
 
   return (
     <aside className="hidden w-60 shrink-0 flex-col border-r border-subtle bg-surface md:flex">
@@ -45,12 +60,9 @@ function Sidebar() {
           <span className="flex size-6 items-center justify-center rounded-md bg-accent text-white">
             <Sparkles className="size-3.5" />
           </span>
-          MotionDeck
+          <span className="truncate">{workspaceName}</span>
         </Link>
-        <Button className="w-full gap-2" size="md">
-          <Plus className="size-4" />
-          New Deck
-        </Button>
+        <NewDeckButton size="md" className="w-full" />
       </div>
 
       <nav className="flex-1 space-y-6 overflow-y-auto px-3 pb-4">
@@ -88,18 +100,21 @@ function Sidebar() {
             {folders.map((folder) => (
               <Link
                 key={folder.id}
-                href={ROUTES.folder("default", folder.id)}
+                href={ROUTES.folder(workspaceId, folder.id)}
                 className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-md text-secondary hover:bg-surface-raised hover:text-primary"
               >
                 <span className="size-4 rounded-sm bg-neutral-300" />
                 {folder.name}
               </Link>
             ))}
+            {folders.length === 0 && (
+              <p className="px-2.5 py-1 text-sm text-tertiary">No folders yet</p>
+            )}
           </div>
         </div>
 
         <div className="space-y-0.5">
-          <Link href="#" className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-md text-secondary hover:bg-surface-raised hover:text-primary">
+          <Link href="/shared" className="flex items-center gap-2.5 rounded-md px-2.5 py-2 text-md text-secondary hover:bg-surface-raised hover:text-primary">
             <Share2 className="size-4" />
             Shared links
           </Link>
@@ -120,11 +135,7 @@ function Sidebar() {
         </Link>
       </div>
 
-      <FolderDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        onSubmit={(name) => setFolders((f) => [...f, { id: crypto.randomUUID(), name }])}
-      />
+      <FolderDialog open={createOpen} onOpenChange={setCreateOpen} onSubmit={handleCreateFolder} />
     </aside>
   );
 }
