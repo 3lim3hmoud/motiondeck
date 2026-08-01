@@ -3,11 +3,25 @@ import { GoogleGenAI, Type } from "@google/genai";
 import { env } from "@/config/env";
 
 /**
- * Server-only Gemini client. Never import this from a Client Component —
- * the `server-only` import above makes that a build-time error, not just a
- * convention, so GEMINI_API_KEY can never leak into the browser bundle.
+ * Server-only Gemini client, built lazily on first use (not at module load)
+ * so a missing GEMINI_API_KEY surfaces as a normal catchable error from
+ * generateDeckFromText — not a crash at import time. The `server-only`
+ * import above still makes importing this from a Client Component a
+ * build-time error, so the key can never leak into the browser bundle.
  */
-const ai = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
+let cachedClient: GoogleGenAI | null = null;
+
+function getClient(): GoogleGenAI {
+  if (!env.GEMINI_API_KEY) {
+    throw new Error(
+      "AI parsing isn't configured yet — set GEMINI_API_KEY to enable it.",
+    );
+  }
+  if (!cachedClient) {
+    cachedClient = new GoogleGenAI({ apiKey: env.GEMINI_API_KEY });
+  }
+  return cachedClient;
+}
 
 const MODEL = "gemini-2.5-flash";
 
@@ -70,7 +84,7 @@ SOURCE TEXT:
 ${trimmed}
 """`;
 
-  const response = await ai.models.generateContent({
+  const response = await getClient().models.generateContent({
     model: MODEL,
     contents: prompt,
     config: {

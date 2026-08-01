@@ -6,7 +6,7 @@ import { z } from "zod";
  * Why this exists:
  * - Fails fast at boot with a readable error instead of a cryptic runtime
  *   crash three layers deep when a var is missing.
- * - Gives every consumer full autocomplete + type safety (`env.OPENAI_API_KEY`
+ * - Gives every consumer full autocomplete + type safety (`env.GEMINI_API_KEY`
  *   is `string`, never `string | undefined`).
  * - Draws a hard line between server-only secrets and NEXT_PUBLIC_ values so a
  *   secret can never accidentally leak into a client bundle.
@@ -27,7 +27,7 @@ const serverSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   UPLOADTHING_TOKEN: z.string().optional(),
 
-  GEMINI_API_KEY: z.string(),
+  GEMINI_API_KEY: z.string().optional(),
 
   STRIPE_SECRET_KEY: z.string().optional(),
   STRIPE_WEBHOOK_SECRET: z.string().optional(),
