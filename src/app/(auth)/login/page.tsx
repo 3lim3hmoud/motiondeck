@@ -1,7 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { signIn } from "next-auth/react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { ROUTES } from "@/constants/routes";
@@ -25,14 +28,31 @@ const loginSchema = z.object({
 });
 
 export default function LoginPage() {
+  const router = useRouter();
+  const [formError, setFormError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const form = useForm<z.infer<typeof loginSchema>>({
     resolver: zodResolver(loginSchema),
     defaultValues: { email: "", password: "" },
   });
 
-  function onSubmit(values: z.infer<typeof loginSchema>) {
-    // TODO(Phase — Auth backend): wire to NextAuth credentials sign-in.
-    console.log("log in", values);
+  async function onSubmit(values: z.infer<typeof loginSchema>) {
+    setFormError(null);
+    setIsSubmitting(true);
+    const result = await signIn("credentials", {
+      email: values.email,
+      password: values.password,
+      redirect: false,
+    });
+    setIsSubmitting(false);
+
+    if (result?.error) {
+      setFormError("Incorrect email or password.");
+      return;
+    }
+    router.push(ROUTES.dashboard);
+    router.refresh();
   }
 
   return (
@@ -42,12 +62,25 @@ export default function LoginPage() {
         <CardDescription>Log in to keep building.</CardDescription>
       </CardHeader>
       <CardContent>
-        <SsoButtons />
+        <SsoButtons
+          onSelect={(provider) => {
+            if (provider === "google") {
+              void signIn("google", { callbackUrl: ROUTES.dashboard });
+            } else {
+              setFormError("Microsoft sign-in isn't set up yet — use email or Google.");
+            }
+          }}
+        />
         <div className="my-5 flex items-center gap-3">
           <Separator className="flex-1" />
           <span className="text-xs text-tertiary">OR</span>
           <Separator className="flex-1" />
         </div>
+        {formError ? (
+          <p className="mb-4 text-sm text-danger" role="alert">
+            {formError}
+          </p>
+        ) : null}
         <Form {...form}>
           <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
             <FormField
@@ -81,8 +114,8 @@ export default function LoginPage() {
                 </FormItem>
               )}
             />
-            <Button type="submit" className="w-full" size="lg">
-              Log in
+            <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
+              {isSubmitting ? "Logging in…" : "Log in"}
             </Button>
           </form>
         </Form>

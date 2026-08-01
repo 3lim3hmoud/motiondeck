@@ -1,9 +1,7 @@
 // MotionDeck — Prisma Schema
-// This is a Phase 1 scaffold: datasource, generator, and NextAuth's required
-// models only, so `db:push` works immediately. Domain models (Workspace,
-// Folder, Deck, Scene, Animation, ShareLink, AiJob, etc.) are introduced in
-// the Dashboard / Editor backend phases so each model lands alongside the
-// feature that owns it, with a matching migration and explanation.
+// Phase 2: full domain model for the Supabase/Postgres backend, alongside
+// NextAuth's required models. Every model here mirrors src/types/domain.ts
+// and the feature set described in FEATURES_CHECKLIST.md.
 
 generator client {
   provider = "prisma-client-js"
@@ -23,11 +21,27 @@ model User {
   email         String    @unique
   emailVerified DateTime?
   image         String?
+  /// bcrypt hash, only set for Credentials sign-up. Null for OAuth-only users.
+  passwordHash  String?
   createdAt     DateTime  @default(now())
   updatedAt     DateTime  @updatedAt
 
-  accounts Account[]
-  sessions Session[]
+  accounts           Account[]
+  sessions           Session[]
+  workspaceMembers   WorkspaceMember[]
+  createdWorkspaces  Workspace[]        @relation("WorkspaceCreatedBy")
+  createdFolders     Folder[]           @relation("FolderCreatedBy")
+  createdDecks       Deck[]             @relation("DeckCreatedBy")
+  deckVersions       DeckVersion[]
+  shareLinks         ShareLink[]
+  comments           Comment[]
+  notifications      Notification[]
+  activityEvents     ActivityEvent[]
+  apiKeys            ApiKey[]
+  jobs               Job[]
+  sentInvites        WorkspaceInvite[]  @relation("InviteSentBy")
+
+  @@index([email])
 }
 
 model Account {
@@ -47,6 +61,7 @@ model Account {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 model Session {
@@ -56,6 +71,8 @@ model Session {
   expires      DateTime
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model VerificationToken {
@@ -64,4 +81,376 @@ model VerificationToken {
   expires    DateTime
 
   @@unique([identifier, token])
+}
+
+// ── Enums ───────────────────────────────────────────────────────────────
+
+enum PlanTier {
+  free
+  pro
+  team
+  enterprise
+}
+
+enum WorkspaceRole {
+  owner
+  admin
+  editor
+  viewer
+}
+
+enum DeckStatus {
+  draft
+  processing
+  ready
+  archived
+}
+
+enum ShareVisibility {
+  private
+  public
+  password
+}
+
+enum ShareRole {
+  view
+  comment
+  edit
+}
+
+enum JobType {
+  ai_generate
+  import_pptx
+  import_pdf
+  export_pdf
+  export_mp4
+  export_html
+}
+
+enum JobStatus {
+  queued
+  processing
+  completed
+  failed
+}
+
+// ── Workspace & membership ─────────────────────────────────────────────
+
+model Workspace {
+  id        String   @id @default(cuid())
+  name      String
+  slug      String   @unique
+  planTier  PlanTier @default(free)
+  createdById String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  createdBy    User               @relation("WorkspaceCreatedBy", fields: [createdById], references: [id])
+  members      WorkspaceMember[]
+  invites      WorkspaceInvite[]
+  folders      Folder[]
+  decks        Deck[]
+  activityEvents ActivityEvent[]
+  apiKeys      ApiKey[]
+  jobs         Job[]
+  subscription Subscription?
+
+  @@index([createdById])
+}
+
+model WorkspaceMember {
+  id          String        @id @default(cuid())
+  userId      String
+  workspaceId String
+  role        WorkspaceRole @default(editor)
+  createdAt   DateTime      @default(now())
+
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, workspaceId])
+  @@index([workspaceId])
+}
+
+model WorkspaceInvite {
+  id          String        @id @default(cuid())
+  workspaceId String
+  email       String
+  role        WorkspaceRole @default(editor)
+  token       String        @unique @default(cuid())
+  invitedById String
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime      @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  invitedBy User      @relation("InviteSentBy", fields: [invitedById], references: [id])
+
+  @@index([workspaceId])
+  @@index([email])
+}
+
+// ── Content: folders, decks, scenes, animations ────────────────────────
+
+model Folder {
+  id             String    @id @default(cuid())
+  workspaceId    String
+  parentFolderId String?
+  name           String
+  createdById    String
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  deletedAt      DateTime?
+
+  workspace    Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  parentFolder Folder?   @relation("FolderChildren", fields: [parentFolderId], references: [id])
+  childFolders Folder[]  @relation("FolderChildren")
+  createdBy    User      @relation("FolderCreatedBy", fields: [createdById], references: [id])
+  decks        Deck[]
+
+  @@index([workspaceId])
+  @@index([parentFolderId])
+}
+
+model Deck {
+  id           String     @id @default(cuid())
+  workspaceId  String
+  folderId     String?
+  title        String
+  status       DeckStatus @default(draft)
+  thumbnailUrl String?
+  createdById  String
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
+  deletedAt    DateTime?
+
+  workspace   Workspace     @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  folder      Folder?       @relation(fields: [folderId], references: [id])
+  createdBy   User          @relation("DeckCreatedBy", fields: [createdById], references: [id])
+  scenes      Scene[]
+  versions    DeckVersion[]
+  shareLinks  ShareLink[]
+  comments    Comment[]
+  jobs        Job[]
+  analyticsEvents AnalyticsEvent[]
+
+  @@index([workspaceId])
+  @@index([folderId])
+}
+
+model Scene {
+  id           String  @id @default(cuid())
+  deckId       String
+  order        Int
+  title        String
+  layoutId     String
+  speakerNotes String?
+  content      Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deck            Deck             @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  animations      Animation[]
+  comments        Comment[]
+  analyticsEvents AnalyticsEvent[]
+
+  @@index([deckId])
+}
+
+model Animation {
+  id              String   @id @default(cuid())
+  sceneId         String
+  targetElementId String
+  type            String
+  config          Json
+  order           Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  scene Scene @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+
+  @@index([sceneId])
+}
+
+model DeckVersion {
+  id          String   @id @default(cuid())
+  deckId      String
+  label       String?
+  snapshot    Json
+  createdById String
+  createdAt   DateTime @default(now())
+
+  deck      Deck @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  createdBy User @relation(fields: [createdById], references: [id])
+
+  @@index([deckId])
+}
+
+// ── Sharing ─────────────────────────────────────────────────────────────
+
+model ShareLink {
+  id            String          @id @default(cuid())
+  deckId        String
+  token         String          @unique @default(cuid())
+  visibility    ShareVisibility @default(private)
+  passwordHash  String?
+  expiresAt     DateTime?
+  allowComments Boolean         @default(true)
+  createdById   String
+  createdAt     DateTime        @default(now())
+
+  deck      Deck               @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  createdBy User               @relation(fields: [createdById], references: [id])
+  grants    ShareLinkGrant[]
+  analyticsEvents AnalyticsEvent[]
+
+  @@index([deckId])
+}
+
+model ShareLinkGrant {
+  id          String    @id @default(cuid())
+  shareLinkId String
+  email       String
+  role        ShareRole @default(view)
+  createdAt   DateTime  @default(now())
+
+  shareLink ShareLink @relation(fields: [shareLinkId], references: [id], onDelete: Cascade)
+
+  @@unique([shareLinkId, email])
+}
+
+// ── Comments ────────────────────────────────────────────────────────────
+
+model Comment {
+  id        String   @id @default(cuid())
+  deckId    String
+  sceneId   String?
+  parentId  String?
+  authorId  String
+  body      String
+  resolved  Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  deck    Deck      @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  scene   Scene?    @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  author  User      @relation(fields: [authorId], references: [id])
+  parent  Comment?  @relation("CommentReplies", fields: [parentId], references: [id])
+  replies Comment[] @relation("CommentReplies")
+
+  @@index([deckId])
+  @@index([sceneId])
+  @@index([parentId])
+}
+
+// ── Notifications & activity ───────────────────────────────────────────
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  body      String?
+  link      String?
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model ActivityEvent {
+  id          String   @id @default(cuid())
+  workspaceId String
+  actorId     String
+  type        String
+  targetType  String?
+  targetId    String?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  actor     User      @relation(fields: [actorId], references: [id])
+
+  @@index([workspaceId])
+  @@index([actorId])
+}
+
+// ── Analytics ───────────────────────────────────────────────────────────
+
+model AnalyticsEvent {
+  id          String    @id @default(cuid())
+  deckId      String
+  sceneId     String?
+  shareLinkId String?
+  viewerId    String
+  event       String
+  metadata    Json?
+  createdAt   DateTime  @default(now())
+
+  deck      Deck       @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  scene     Scene?     @relation(fields: [sceneId], references: [id], onDelete: Cascade)
+  shareLink ShareLink? @relation(fields: [shareLinkId], references: [id], onDelete: Cascade)
+
+  @@index([deckId])
+  @@index([sceneId])
+  @@index([shareLinkId])
+}
+
+// ── Integrations / API keys ────────────────────────────────────────────
+
+model ApiKey {
+  id          String    @id @default(cuid())
+  workspaceId String
+  name        String
+  keyHash     String    @unique
+  lastUsedAt  DateTime?
+  createdById String
+  createdAt   DateTime  @default(now())
+  revokedAt   DateTime?
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdBy User      @relation(fields: [createdById], references: [id])
+
+  @@index([workspaceId])
+}
+
+// ── Background jobs: AI parsing, import, export ────────────────────────
+
+model Job {
+  id          String    @id @default(cuid())
+  workspaceId String
+  deckId      String?
+  type        JobType
+  status      JobStatus @default(queued)
+  progress    Int       @default(0)
+  resultUrl   String?
+  error       String?
+  createdById String
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  deck      Deck?     @relation(fields: [deckId], references: [id], onDelete: Cascade)
+  createdBy User      @relation(fields: [createdById], references: [id])
+
+  @@index([workspaceId])
+  @@index([deckId])
+}
+
+// ── Billing (schema only — no live Stripe calls; free tier default) ────
+
+model Subscription {
+  id                   String   @id @default(cuid())
+  workspaceId          String   @unique
+  stripeCustomerId     String?
+  stripeSubscriptionId String?
+  planTier             PlanTier @default(free)
+  status               String   @default("active")
+  currentPeriodEnd     DateTime?
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
 }
