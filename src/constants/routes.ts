@@ -17,7 +17,7 @@ export const ROUTES = {
   workspace: (workspaceId: string) => `/workspace/${workspaceId}`,
   folder: (workspaceId: string, folderId: string) =>
     `/workspace/${workspaceId}/folders/${folderId}`,
-  deckImport: (workspaceId: string) => `/workspace/${workspaceId}/import`,
+  deckImport: "/import",
 
   editor: (deckId: string) => `/editor/${deckId}`,
   present: (deckId: string) => `/present/${deckId}`,

@@ -117,7 +117,7 @@ function DashboardView({
           icon={<FileText />}
           title="Nothing here yet — import a doc and watch it come alive"
           description="Bring in a document, PDF, or slide deck and MotionDeck will structure it into an animated presentation automatically."
-          action={{ label: "Import a Document", onClick: () => router.push(ROUTES.deckImport("default")) }}
+          action={{ label: "Import a Document", onClick: () => router.push(ROUTES.deckImport) }}
           secondaryAction={{ label: "Start from a template", onClick: () => router.push("/templates") }}
         />
       ) : (

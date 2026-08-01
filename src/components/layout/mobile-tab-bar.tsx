@@ -9,7 +9,7 @@ import { cn } from "@/lib/utils";
 const tabs = [
   { label: "Home", href: ROUTES.dashboard, icon: Home },
   { label: "Search", href: "/search", icon: Search },
-  { label: "New", href: ROUTES.deckImport("default"), icon: Plus, isAction: true },
+  { label: "New", href: ROUTES.deckImport, icon: Plus, isAction: true },
   { label: "Alerts", href: "/notifications", icon: Bell },
   { label: "Profile", href: ROUTES.profile, icon: User },
 ];

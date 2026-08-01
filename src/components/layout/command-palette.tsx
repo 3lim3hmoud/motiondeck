@@ -82,7 +82,7 @@ function CommandPalette({ open, onOpenChange }: { open: boolean; onOpenChange: (
         <CommandSeparator />
 
         <CommandGroup heading="Actions">
-          <CommandItem onSelect={() => go(ROUTES.deckImport("default"))}>
+          <CommandItem onSelect={() => go(ROUTES.deckImport)}>
             <Plus /> New deck from import
           </CommandItem>
           <CommandItem onSelect={() => go("/templates")}>
