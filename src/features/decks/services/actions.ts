@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/server/db/client";
 import { requireWorkspaceContext } from "@/server/workspace/context";
 
@@ -14,7 +15,14 @@ async function logActivity(
   metadata?: Record<string, unknown>,
 ) {
   await prisma.activityEvent.create({
-    data: { workspaceId, actorId, type, targetType: "deck", targetId, metadata },
+    data: {
+      workspaceId,
+      actorId,
+      type,
+      targetType: "deck",
+      targetId,
+      metadata: metadata as Prisma.InputJsonValue | undefined,
+    },
   });
 }
 

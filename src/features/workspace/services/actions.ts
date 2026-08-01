@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import type { Prisma } from "@prisma/client";
 import { prisma } from "@/server/db/client";
 import { requireWorkspaceContext } from "@/server/workspace/context";
 
@@ -8,7 +9,14 @@ type ActionResult = { ok: true; folderId?: string } | { ok: false; error: string
 
 async function logActivity(workspaceId: string, actorId: string, type: string, targetId: string, metadata?: Record<string, unknown>) {
   await prisma.activityEvent.create({
-    data: { workspaceId, actorId, type, targetType: "folder", targetId, metadata },
+    data: {
+      workspaceId,
+      actorId,
+      type,
+      targetType: "folder",
+      targetId,
+      metadata: metadata as Prisma.InputJsonValue | undefined,
+    },
   });
 }
 
