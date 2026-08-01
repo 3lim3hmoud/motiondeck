@@ -106,7 +106,7 @@ function AiParsing({ fileName, sourceText, onComplete, onCancel }: AiParsingProp
         <div className="flex size-14 items-center justify-center rounded-full bg-danger/10 text-danger">
           <AlertTriangle className="size-6" />
         </div>
-        <h1 className="text-2xl font-semibold text-primary">Couldn't structure “{fileName}”</h1>
+        <h1 className="text-2xl font-semibold text-primary">Couldn’t structure “{fileName}”</h1>
         <p className="max-w-sm text-md text-secondary">{error}</p>
         <div className="mt-2 flex gap-2">
           <Button variant="ghost" onClick={onCancel}>
