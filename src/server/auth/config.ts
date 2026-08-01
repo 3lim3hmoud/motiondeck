@@ -19,8 +19,8 @@ export const authConfig = {
   adapter: PrismaAdapter(prisma),
   session: { strategy: "jwt" },
   pages: {
-    signIn: "/auth/login",
-    newUser: "/auth/onboarding",
+    signIn: "/login",
+    newUser: "/onboarding",
   },
   providers: [
     Credentials({

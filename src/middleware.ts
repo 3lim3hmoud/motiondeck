@@ -3,7 +3,7 @@ import { auth } from "@/server/auth";
 import { ROUTES } from "@/constants/routes";
 
 const PROTECTED_PREFIXES = ["/dashboard", "/workspace", "/editor", "/import", "/settings", "/billing", "/notifications", "/analytics", "/activity", "/shared", "/trash", "/search"];
-const AUTH_PAGES = ["/auth/login", "/auth/signup"];
+const AUTH_PAGES = ["/login", "/signup"];
 
 export default auth((req) => {
   const { pathname } = req.nextUrl;
