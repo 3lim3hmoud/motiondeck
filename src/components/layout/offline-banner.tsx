@@ -42,7 +42,7 @@ function OfflineBanner() {
           className="fixed inset-x-0 top-0 z-toast flex items-center justify-center gap-2 bg-warning py-2 text-sm font-medium text-neutral-900"
         >
           <WifiOff className="size-4" />
-          You're offline — changes will sync once you're back online.
+          You’re offline — changes will sync once you’re back online.
         </motion.div>
       )}
     </AnimatePresence>

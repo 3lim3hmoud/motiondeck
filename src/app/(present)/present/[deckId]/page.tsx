@@ -114,7 +114,7 @@ export default function PresentPage({ params }: { params: Promise<{ deckId: stri
           </p>
           <ScrollArea className="h-40">
             <p className="text-sm leading-relaxed text-neutral-300">
-              Lead with the three-phase rollout timeline. Pause after "40% reduction" — let it
+              Lead with the three-phase rollout timeline. Pause after “40% reduction” — let it
               land before moving to the next point.
             </p>
           </ScrollArea>

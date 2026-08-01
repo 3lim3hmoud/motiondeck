@@ -139,7 +139,7 @@ export default function SignupPage() {
         </AnimatePresence>
 
         <p className="mt-6 text-center text-xs text-tertiary">
-          By continuing you agree to MotionDeck's{" "}
+          By continuing you agree to MotionDeck’s{" "}
           <Link href="#" className="underline hover:text-secondary">Terms</Link> and{" "}
           <Link href="#" className="underline hover:text-secondary">Privacy Policy</Link>.
         </p>

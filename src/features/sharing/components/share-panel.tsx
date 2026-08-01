@@ -193,7 +193,7 @@ function EmbedTab() {
         <Select value={theme} onValueChange={setTheme}>
           <SelectTrigger><SelectValue /></SelectTrigger>
           <SelectContent>
-            <SelectItem value="auto">Match visitor's system</SelectItem>
+            <SelectItem value="auto">Match visitor’s system</SelectItem>
             <SelectItem value="light">Always light</SelectItem>
             <SelectItem value="dark">Always dark</SelectItem>
           </SelectContent>

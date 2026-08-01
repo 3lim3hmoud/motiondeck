@@ -89,7 +89,7 @@ export default function LoginPage() {
       </CardContent>
 
       <p className="mt-2 pb-6 text-center text-md text-secondary">
-        Don't have an account?{" "}
+        Don’t have an account?{" "}
         <Link href={ROUTES.signup} className="font-medium text-accent hover:underline">
           Start Free
         </Link>

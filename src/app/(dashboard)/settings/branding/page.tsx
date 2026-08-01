@@ -93,7 +93,7 @@ export default function BrandingSettingsPage() {
             {showLockWarning && (
               <Alert variant="warning" className="mt-1">
                 <AlertDescription>
-                  Members won't be able to override colors or fonts when creating new decks. Existing decks are unaffected.
+                  Members won’t be able to override colors or fonts when creating new decks. Existing decks are unaffected.
                 </AlertDescription>
               </Alert>
             )}

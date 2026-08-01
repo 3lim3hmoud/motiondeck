@@ -112,7 +112,7 @@ export default function TrashPage() {
               Delete permanently?
             </DialogTitle>
             <DialogDescription>
-              "{pendingDelete?.title}" will be permanently deleted. This cannot be undone.
+              “{pendingDelete?.title}” will be permanently deleted. This cannot be undone.
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
