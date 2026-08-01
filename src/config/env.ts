@@ -27,8 +27,7 @@ const serverSchema = z.object({
   SUPABASE_SERVICE_ROLE_KEY: z.string().optional(),
   UPLOADTHING_TOKEN: z.string(),
 
-  OPENAI_API_KEY: z.string(),
-  OPENAI_ORG_ID: z.string().optional(),
+  GEMINI_API_KEY: z.string(),
 
   STRIPE_SECRET_KEY: z.string(),
   STRIPE_WEBHOOK_SECRET: z.string(),
@@ -52,8 +51,11 @@ const clientSchema = z.object({
 
 const isServer = typeof window === "undefined";
 
-function loadEnv() {
-  const parsed = (isServer ? serverSchema.merge(clientSchema) : clientSchema).safeParse(
+const fullSchema = serverSchema.merge(clientSchema);
+type FullEnv = z.infer<typeof fullSchema>;
+
+function loadEnv(): FullEnv {
+  const parsed = (isServer ? fullSchema : clientSchema).safeParse(
     isServer ? process.env : {
       NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
       NEXT_PUBLIC_SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL,
@@ -74,7 +76,7 @@ function loadEnv() {
     throw new Error("Invalid environment variables. See console for details.");
   }
 
-  return parsed.data;
+  return parsed.data as FullEnv;
 }
 
 export const env = loadEnv();
